@@ -1,4 +1,4 @@
-timport streamlit as st
+import streamlit as st
 import pandas as pd
 from openai import OpenAI  # ← Changed from google.generativeai
 from datetime import datetime
