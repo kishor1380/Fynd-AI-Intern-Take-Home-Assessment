@@ -135,8 +135,8 @@ def generate_user_response(rating, review):
     messages = [
         {"role": "user", "content": f"""You are an empathetic customer service manager responding to customer reviews.
 
-Write a warm, personalized response (3-4 sentences) to this customer review:
-
+Write a natural, human-sounding reply (3–4 sentences) to the customer’s review.
+Your response must be directly based on the rating and the exact details mentioned in the review.
 Rating: {rating}/5 stars
 Review: "{review}"
 
@@ -326,7 +326,7 @@ else:
         elif len(review.strip()) < 5:
             st.error("⚠️ Please write at least 5 characters.")
         else:
-            with st.spinner("🤖 Generating AI responses..."):
+            with st.spinner("Typing to reply..."):
 
                 # 1. Generate User Response
                 ai_response = generate_user_response(st.session_state.selected_rating, review)
