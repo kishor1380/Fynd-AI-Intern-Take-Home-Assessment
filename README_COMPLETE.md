@@ -23,22 +23,22 @@ A production-ready, full-stack customer feedback platform with intelligent AI re
 ## ✨ **Features**
 
 ### **User Dashboard**
-- ⭐ **Interactive Star Rating System** - 5-star clickable interface
-- 📝 **Real-time Feedback Collection** - Clean, intuitive form
-- 🤖 **AI-Powered Responses** - Personalized replies using Google Gemma 3n
-- 🎨 **Modern UI/UX** - Compact, mobile-responsive design
-- 🎉 **Celebration Animations** - Balloons for positive reviews
-- 📊 **Live Statistics** - Total reviews, average rating, weekly stats
+-  **Interactive Star Rating System** - 5-star clickable interface
+-  **Real-time Feedback Collection** - Clean, intuitive form
+-  **AI-Powered Responses** - Personalized replies using Google Gemma 3n
+-  **Modern UI/UX** - Compact, mobile-responsive design
+-  **Celebration Animations** - Balloons for positive reviews
+-  **Live Statistics** - Total reviews, average rating, weekly stats
 
 ### **Admin Dashboard**
-- 📊 **Real-time Analytics** - Auto-refreshing every 10 seconds
-- 📈 **Interactive Charts** - Rating distribution, sentiment analysis, trends
-- 🔍 **Advanced Filtering** - By date range, rating, sentiment, priority
-- 📥 **CSV Export** - Download feedback with IST timestamps
-- 🎯 **Priority Management** - High/Medium/Low urgency tags
-- 🗑️ **Bulk Actions** - Clear all submissions with confirmation
-- 🌐 **Timezone Support** - Indian Standard Time (IST)
-- 🎨 **Beautiful Gradients** - Purple-themed modern design
+-  **Real-time Analytics** - Auto-refreshing every 10 seconds
+-  **Interactive Charts** - Rating distribution, sentiment analysis, trends
+-  **Advanced Filtering** - By date range, rating, sentiment, priority
+-  **CSV Export** - Download feedback with IST timestamps
+-  **Priority Management** - High/Medium/Low urgency tags
+-  **Bulk Actions** - Clear all submissions with confirmation
+-  **Timezone Support** - Indian Standard Time (IST)
+-  **Beautiful Gradients** - Purple-themed modern design
 
 ### **AI Features**
 - **Smart Responses**: Context-aware, empathetic customer replies
@@ -134,7 +134,7 @@ A production-ready, full-stack customer feedback platform with intelligent AI re
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/feedback-system.git
+git clone https://github.com/kishor1380/Fynd-AI-Intern-Take-Home-Assessment.git
 cd feedback-system
 ```
 
@@ -544,7 +544,7 @@ This project successfully demonstrates:
 
 ---
 
-*Report prepared by: [Your Name]*  
+*Report prepared by: [Kishor Kumar Sahu]*  
 *Date: December 6, 2025*
 
 ---
@@ -593,9 +593,8 @@ MIT License - see LICENSE file
 ## 👨‍💻 **Author**
 
 **Your Name**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- Email: your.email@example.com
-
+- GitHub: [@yourusername](https://github.com/kishor1380)
+- Email: kishorsahua380@gmail.com
 ---
 
 ## ⭐ **Show Your Support**
