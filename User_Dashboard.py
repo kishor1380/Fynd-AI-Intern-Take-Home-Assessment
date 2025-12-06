@@ -9,7 +9,7 @@ from supabase import create_client, Client
 
 # Page configuration - MUST be first
 st.set_page_config(
-    page_title="Customer feedback System",
+    page_title="Customer Feedback System",
     page_icon="⭐",
     layout="centered"
 )
@@ -56,21 +56,14 @@ st.markdown("""
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 except:
-    try:
-        GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
-    except:
-        GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 try:
     SUPABASE_URL = st.secrets["SUPABASE_URL"]
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 except:
-    try:
-        SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
-        SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")
-    except:
-        SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-        SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
+    SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+    SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
 # Validate credentials
 if not GEMINI_API_KEY or not SUPABASE_URL or not SUPABASE_KEY:
@@ -105,37 +98,94 @@ if 'last_rating' not in st.session_state:
 if 'selected_rating' not in st.session_state:
     st.session_state.selected_rating = 5
 
-# AI Functions
+# --- UPDATED AI FUNCTIONS WITH DETAILED PROMPTS ---
+
 def generate_user_response(rating, review):
-    prompt = f"""You are a customer service manager. Write a warm, personal response to this review.
+    """Generate a friendly, empathetic response to the user review."""
+    prompt = f"""You are an empathetic customer service manager personally responding to this customer review.
+
 Rating: {rating}/5 stars
-Review: {review}
-Write 3-4 sentences that mention specific details from their review.
-Response:"""
+Review: "{review}"
+
+Write a warm, personalized response (3-4 sentences) that:
+1. SPECIFICALLY mentions what the customer talked about - use their exact words and context
+2. Shows genuine emotion appropriate to their rating
+3. If negative (1-2 stars): 
+   - Apologize SPECIFICALLY for what went wrong (mention the exact issue they raised)
+   - Offer a concrete solution or next step
+4. If positive (4-5 stars): 
+   - Express genuine excitement about the SPECIFIC things they praised
+   - Mention those specific details back to them
+5. If neutral (3 stars): 
+   - Acknowledge the mixed feelings about SPECIFIC aspects they mentioned
+   - Commit to improving the exact things they found lacking
+
+CRITICAL: Be conversational, warm, and reference SPECIFIC details from their review.
+
+Response (directly to customer, no preamble):"""
+
+    # Retry logic
     for attempt in range(3):
         try:
             response = model.generate_content(prompt)
             if response and response.text: return response.text.strip()
-        except: time.sleep(1)
-    return "Thank you for your feedback! We appreciate it."
+        except: 
+            time.sleep(1)
+            
+    return f"Thank you for your {rating}-star review! We appreciate your feedback."
 
 def generate_summary(rating, review):
-    prompt = f"Summarize review in 15 words. Rating: {rating}/5. Review: {review}"
+    """Generate a concise summary for admin dashboard."""
+    prompt = f"""Create a detailed admin summary (20 to 25 words) that captures the KEY SPECIFIC POINTS from this customer review.
+
+Rating: {rating}/5 stars
+Review: "{review}"
+
+Focus on WHAT SPECIFICALLY they mentioned. Be concrete, informative, and actionable.
+
+Summary (15-25 words):"""
+
+    # Retry logic
     for attempt in range(3):
         try:
             response = model.generate_content(prompt)
             if response and response.text: return response.text.strip()
-        except: time.sleep(1)
-    return f"{rating}⭐ Review"
+        except: 
+            time.sleep(1)
+            
+    return f"{rating}-star review: {review[:50]}..."
 
 def generate_actions(rating, review):
-    prompt = f"3 bullet point actions for this review. Rating: {rating}/5. Review: {review}"
+    """Generate recommended next actions based on feedback."""
+    prompt = f"""You are a business consultant analyzing this customer feedback. Generate 3-4 CONCRETE, SPECIFIC action items.
+
+Rating: {rating}/5 stars
+Review: "{review}"
+
+Requirements:
+1. Reference SPECIFIC issues or praises from the review
+2. Give actionable steps with WHAT to do and HOW
+3. Use action verbs: Contact, Investigate, Train, Implement, etc.
+
+Format as bullet points (use • not -).
+Each action should be 1-2 lines maximum.
+
+Recommended Actions:"""
+
+    # Retry logic
     for attempt in range(3):
         try:
             response = model.generate_content(prompt)
             if response and response.text: return response.text.strip()
-        except: time.sleep(1)
-    return "• Review feedback"
+        except: 
+            time.sleep(1)
+            
+    # Fallback actions based on rating
+    if rating <= 2:
+        return "• Contact customer for service recovery\n• Investigate reported issues"
+    return "• Thank customer for feedback\n• Monitor for similar trends"
+
+# --- END AI FUNCTIONS ---
 
 def generate_all_ai_content_parallel(rating, review):
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
@@ -154,17 +204,32 @@ def save_feedback(rating, review, ai_response, ai_summary, recommended_actions):
             'ai_summary': ai_summary,
             'recommended_actions': recommended_actions
         }
+        # Insert into Supabase 'feedback' table
         supabase.table('feedback').insert(data).execute()
         return True
-    except: return False
+    except Exception as e: 
+        print(f"Supabase Error: {e}")
+        return False
 
 def get_stats():
     try:
-        response = supabase.table('feedback').select('*').execute()
+        # Fetch data from Supabase for stats
+        response = supabase.table('feedback').select('rating, timestamp').execute()
         if response.data:
             df = pd.DataFrame(response.data)
-            return len(df), df['rating'].mean(), len(df) # Simplified for display
-    except: pass
+            
+            # Basic calculations
+            total_reviews = len(df)
+            avg_rating = df['rating'].mean() if total_reviews > 0 else 0
+            
+            # Recent reviews (last 7 days)
+            # Ensure timestamp is datetime
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            recent_count = len(df[df['timestamp'] >= (datetime.now() - pd.Timedelta(days=7))])
+            
+            return total_reviews, avg_rating, recent_count
+    except: 
+        pass
     return 0, 0, 0
 
 def reset_form():
@@ -174,7 +239,7 @@ def reset_form():
     st.rerun()
 
 # MAIN UI START
-st.title("⭐ Customer feedback System")
+st.title("⭐ Customer Feedback System")
 st.markdown("We value your feedback! Please share your experience with us.", help=None)
 
 # Added a spacer to separate title from content slightly without being huge
@@ -182,6 +247,11 @@ st.write("")
 
 if st.session_state.submission_complete:
     st.success("✅ Feedback submitted!")
+    
+    # Show celebration for positive reviews
+    if st.session_state.last_rating >= 4:
+        st.balloons()
+    
     st.subheader("Our Response")
     st.info(st.session_state.last_response)
     
@@ -201,7 +271,7 @@ else:
                 st.session_state.selected_rating = i + 1
                 st.rerun()
 
-    # REDUCED MARGINS HERE to fix your specific issue
+    # REDUCED MARGINS
     star_display = "⭐" * st.session_state.selected_rating + "☆" * (5 - st.session_state.selected_rating)
     st.markdown(f"""
         <div style='text-align: center; margin-top: -10px;'>
@@ -212,18 +282,16 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-    # REMOVED THE HORIZONTAL RULE (---) TO SAVE SPACE
-
     with st.form("feedback_form", clear_on_submit=True):
         review = st.text_area(
             "Tell us more about your experience:",
             placeholder="What did you like? What could we improve?",
-            height=120, # Reduced height slightly
+            height=120, 
             max_chars=500
         )
         # Added margin-top to separate button from text area cleanly
         st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-        submitted = st.form_submit_button("Submit feedback", use_container_width=True, type="primary")
+        submitted = st.form_submit_button("Submit Feedback", use_container_width=True, type="primary")
 
     if submitted:
         if not review.strip():
@@ -231,18 +299,22 @@ else:
         elif len(review.strip()) < 10:
             st.error("⚠️ At least 10 characters please.")
         else:
-            # Spinner will now be visible because form is higher up
-            with st.spinner("🤖 Generating AI response..."):
-                start_time = time.time()
+            with st.spinner("🤖 Generative AI Analysis..."):
                 try:
+                    # Parallel generation
                     ai_response, ai_summary, recommended_actions = generate_all_ai_content_parallel(
                         st.session_state.selected_rating, review
                     )
+                    
+                    # Save to Supabase
                     if save_feedback(st.session_state.selected_rating, review, ai_response, ai_summary, recommended_actions):
                         st.session_state.submission_complete = True
                         st.session_state.last_response = ai_response
                         st.session_state.last_rating = st.session_state.selected_rating
                         st.rerun()
+                    else:
+                        st.error("❌ Failed to save to database. Please try again.")
+                        
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
 
