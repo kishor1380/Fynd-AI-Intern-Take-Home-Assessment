@@ -565,13 +565,13 @@ feedback-system/
 ## 🔑 **API Configuration**
 
 ### **OpenRouter (AI Model)**
-1. Go to [openrouter.ai](https://openrouter.ai)
+1. Go to https://openrouter.ai
 2. Sign up/Login
-3. Get API key from [Settings → Keys](https://openrouter.ai/settings/keys)
+3. Get API key from https://openrouter.ai/settings/keys
 4. $1 free credit = ~1000 requests
 
 ### **Supabase (Database)**
-1. Create project at [supabase.com](https://supabase.com)
+1. Create project at https://supabase.com
 2. Copy URL and anon key from Settings → API
 3. Free tier: 500MB database, 2GB bandwidth
 
@@ -585,8 +585,8 @@ Contributions welcome! Fork → Branch → Commit → Push → Pull Request
 
 ## 👨‍💻 **Author**
 
-**Your Name**
-- GitHub: (https://github.com/kishor1380)
+**Kishor Kumar Sahu**
+- GitHub: https://github.com/kishor1380
 - Email: kishorsahua380@gmail.com
 ---
 
