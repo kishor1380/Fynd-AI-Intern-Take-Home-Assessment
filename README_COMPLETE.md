@@ -16,7 +16,6 @@ A production-ready, full-stack customer feedback platform with intelligent AI re
 - [Project Structure](#-project-structure)
 - [API Configuration](#-api-configuration)
 - [Contributing](#-contributing)
-- [License](#-license)
 
 ---
 
@@ -584,16 +583,10 @@ Contributions welcome! Fork → Branch → Commit → Push → Pull Request
 
 ---
 
-## 📝 **License**
-
-MIT License - see LICENSE file
-
----
-
 ## 👨‍💻 **Author**
 
 **Your Name**
-- GitHub: [@yourusername](https://github.com/kishor1380)
+- GitHub: (https://github.com/kishor1380)
 - Email: kishorsahua380@gmail.com
 ---
 
@@ -602,11 +595,3 @@ MIT License - see LICENSE file
 Give a ⭐️ if this project helped you!
 
 ---
-
-<div align="center">
-
-**Built with ❤️ using Streamlit, OpenRouter, and Supabase**
-
-[⬆ Back to Top](#-ai-powered-customer-feedback-system)
-
-</div>
