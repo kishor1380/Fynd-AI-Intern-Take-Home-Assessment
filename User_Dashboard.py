@@ -133,8 +133,9 @@ def call_openrouter(messages, max_tokens=500, temperature=0.9):
 def generate_user_response(rating, review):
     """Generate a friendly, empathetic response to the user review."""
     messages = [
-        {"role": "system", "content": "You are an empathetic customer service manager responding to customer reviews."},
-        {"role": "user", "content": f"""Write a warm, personalized response (3-4 sentences) to this customer review:
+        {"role": "user", "content": f"""You are an empathetic customer service manager responding to customer reviews.
+
+Write a warm, personalized response (3-4 sentences) to this customer review:
 
 Rating: {rating}/5 stars
 Review: "{review}"
@@ -151,14 +152,12 @@ Be conversational, warm, and reference SPECIFIC details. No preamble.
 Your response:"""}
     ]
 
-    # Retry logic (3 attempts)
     for attempt in range(3):
         result = call_openrouter(messages, max_tokens=500, temperature=0.9)
         if result and len(result) > 20:
             return result
         time.sleep(1)
 
-    # Fallback templates
     if rating >= 4:
         return f"Thank you so much for your wonderful {rating}-star review! We're thrilled to hear about your positive experience. Your feedback means the world to us and motivates our team to keep delivering excellent service. We look forward to serving you again soon!"
     elif rating <= 2:
@@ -169,13 +168,15 @@ Your response:"""}
 def generate_summary(rating, review):
     """Generate a concise summary for admin dashboard."""
     messages = [
-        {"role": "system", "content": "You are a business analyst creating concise summaries."},
-        {"role": "user", "content": f"""Create a summary (15-25 words) of this review:
+        {"role": "user", "content": f"""You are a business analyst creating concise summaries.
+
+Create a summary (15-25 words) of this review:
 
 Rating: {rating}/5 stars
 Review: "{review}"
 
 Focus on SPECIFIC points mentioned. Be concrete and actionable.
+
 Summary:"""}
     ]
 
@@ -190,8 +191,9 @@ Summary:"""}
 def generate_actions(rating, review):
     """Generate recommended next actions based on feedback."""
     messages = [
-        {"role": "system", "content": "You are a business consultant analyzing customer feedback."},
-        {"role": "user", "content": f"""Generate 3 CONCRETE, SPECIFIC action items for this review:
+        {"role": "user", "content": f"""You are a business consultant analyzing customer feedback.
+
+Generate 3 CONCRETE, SPECIFIC action items for this review:
 
 Rating: {rating}/5 stars
 Review: "{review}"
@@ -213,13 +215,13 @@ Recommended Actions:"""}
             return result
         time.sleep(1)
 
-    # Fallback templates
     if rating <= 2:
         return "• Contact customer immediately for service recovery\n• Investigate root cause of reported issues\n• Implement corrective measures to prevent recurrence"
     elif rating >= 4:
         return "• Thank customer personally for positive feedback\n• Request permission to use as testimonial\n• Share success with team and continue excellent service"
     else:
         return "• Acknowledge feedback and thank customer\n• Identify specific improvement areas mentioned\n• Follow up to address concerns"
+
 
 # ---------------------------------------------------------
 # 6. DATABASE & UI LOGIC
