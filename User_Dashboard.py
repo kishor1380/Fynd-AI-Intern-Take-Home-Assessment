@@ -104,7 +104,7 @@ def call_openrouter(messages, max_tokens=500, temperature=0.9):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://yourapp.streamlit.app",   # put your deployed Streamlit URL here
+        "HTTP-Referer": "https://fynd-ai-intern-take-home-assessment-user-dashboard.streamlit.app/",   # put your deployed Streamlit URL here
         "X-Title": "Customer Feedback System"
     }
 
