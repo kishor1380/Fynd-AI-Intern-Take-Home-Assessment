@@ -1,6 +1,6 @@
 import streamlit as st  # ← FIXED TYPO
 import pandas as pd
-from openai import OpenAI  <-- Removed unused import
+from openai import OpenAI
 from datetime import datetime
 import os
 import time
