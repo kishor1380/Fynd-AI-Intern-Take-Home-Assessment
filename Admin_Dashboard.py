@@ -11,7 +11,7 @@ st.set_page_config(
     page_title="Admin Analytics",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 # Enhanced Custom CSS - EXACT SAME AS YOUR ORIGINAL
