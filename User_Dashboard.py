@@ -95,22 +95,40 @@ if 'selected_rating' not in st.session_state:
 # 5. AI FUNCTIONS WITH RETRY LOGIC - OPENROUTER FORMAT
 # ---------------------------------------------------------
 
+import requests
+import json
+
 def call_openrouter(messages, max_tokens=500, temperature=0.9):
-    """Helper function to call OpenRouter API"""
+    url = "https://openrouter.ai/api/v1/chat/completions"
+
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://yourapp.streamlit.app",   # put your deployed Streamlit URL here
+        "X-Title": "Customer Feedback System"
+    }
+
+    body = {
+        "model": MODEL_NAME,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": temperature
+    }
+
     try:
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            extra_headers={
-                "HTTP-Referer": "https://streamlit.io",  # Required by OpenRouter
-                "X-Title": "Customer Feedback System"
-            }
-        )
-        return response.choices[0].message.content.strip()
+        response = requests.post(url, headers=headers, data=json.dumps(body))
+
+        if response.status_code != 200:
+            st.error(f"OpenRouter Error {response.status_code}: {response.text}")
+            return None
+
+        data = response.json()
+        return data["choices"][0]["message"]["content"].strip()
+
     except Exception as e:
+        st.error(f"Request Failed: {e}")
         return None
+
 
 def generate_user_response(rating, review):
     """Generate a friendly, empathetic response to the user review."""
