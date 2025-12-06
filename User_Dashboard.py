@@ -10,7 +10,7 @@ from supabase import create_client, Client
 
 # Page configuration
 st.set_page_config(
-    page_title="Customer Feedback System",
+    page_title="Customer feedback System",
     page_icon="⭐",
     layout="centered"
 )
@@ -190,7 +190,7 @@ def save_feedback(rating, review, ai_response, ai_summary, recommended_actions):
             'ai_summary': ai_summary,
             'recommended_actions': recommended_actions
         }
-        supabase.table('Feedback').insert(data).execute()
+        supabase.table('feedback').insert(data).execute()
         return True
     except Exception as e:
         st.error(f"Database error: {e}")
@@ -198,7 +198,7 @@ def save_feedback(rating, review, ai_response, ai_summary, recommended_actions):
 
 def get_stats():
     try:
-        response = supabase.table('Feedback').select('*').execute()
+        response = supabase.table('feedback').select('*').execute()
         if response.data:
             df = pd.DataFrame(response.data)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -219,7 +219,7 @@ def reset_form():
     st.rerun()
 
 # Main UI
-st.title("⭐ Customer Feedback System")
+st.title("⭐ Customer feedback System")
 st.markdown("We value your feedback! Please share your experience with us.")
 
 if st.session_state.submission_complete:
@@ -264,7 +264,7 @@ else:
             height=150,
             max_chars=500
         )
-        submitted = st.form_submit_button("Submit Feedback", use_container_width=True, type="primary")
+        submitted = st.form_submit_button("Submit feedback", use_container_width=True, type="primary")
 
     if submitted:
         if not review.strip():
