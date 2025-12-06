@@ -1,7 +1,8 @@
 # 🌟 AI-Powered Customer Feedback System
 
 A production-ready, full-stack customer feedback platform with intelligent AI response generation, real-time analytics, and beautiful admin dashboards.
-
+User Dashboard URL: https://fynd-ai-intern-take-home-assessment-user-dashboard.streamlit.app/
+Admin Dashboard URL: https://fynd-ai-intern-take-home-assessment-analytics-dashboard.streamlit.app/
 ---
 
 ## 📋 **Table of Contents**
@@ -358,27 +359,6 @@ messages = [
 # Result: Works perfectly with Gemma 3n-2B
 ```
 
-#### **4.2 Prompt Optimization Techniques**
-
-**Technique 1: Specificity Enforcement**
-- Added "SPECIFICALLY mention what the customer talked about"
-- Reduced generic responses by 80%
-
-**Technique 2: Rating-Based Branching**
-- Different instructions for 1-2, 3, 4-5 stars
-- Improved emotional alignment by 95%
-
-**Technique 3: No Preamble Rule**
-- Added "No preamble" to prevent "Sure, I'd be happy to..."
-- Saved 20-30 tokens per response
-
-**Technique 4: Temperature Tuning**
-| Call Type | Temperature | Rationale |
-|-----------|------------|-----------|
-| User Response | 0.9 | Creative, warm, personalized |
-| Summary | 0.7 | Balanced, factual |
-| Actions | 0.8 | Concrete but varied |
-
 ---
 
 ### **5. Evaluation & Performance**
@@ -399,17 +379,8 @@ messages = [
 4. Fallback Template Usage
 5. User Satisfaction (balloons triggered)
 
-#### **5.2 Results**
 
-| Metric | Target | Achieved | Notes |
-|--------|--------|----------|-------|
-| **API Success Rate** | >95% | 99% | 3 retries + fallbacks |
-| **Response Quality** | 4/5 | 4.2/5 | Human evaluation (n=20) |
-| **Avg Processing Time** | <5s | 3.2s | Sequential calls |
-| **Fallback Usage** | <5% | 1% | Only during API downtime |
-| **Mobile Responsiveness** | 100% | 100% | Tested on 5 devices |
-
-#### **5.3 Performance Analysis**
+#### **5.2 Performance Analysis**
 
 **User Dashboard:**
 - **Loading Time**: 0.8s (initial load)
@@ -422,111 +393,6 @@ messages = [
 - **Chart Rendering**: 0.5s (Plotly)
 - **Filter Application**: 0.3s (Pandas operations)
 - **Auto-refresh Overhead**: 0.4s (every 10s)
-
----
-
-### **6. System Behavior Analysis**
-
-#### **6.1 Task 1: User Feedback Collection**
-
-**Normal Behavior:**
-1. User selects rating (1-5 stars)
-2. User writes review (min 5 chars)
-3. Click "Submit Feedback"
-4. Spinner shows "🤖 Generating AI responses..."
-5. Three API calls execute sequentially:
-   - Call 1: User Response (500 tokens, 0.9 temp)
-   - Call 2: Summary (100 tokens, 0.7 temp)
-   - Call 3: Actions (300 tokens, 0.8 temp)
-6. Data saved to Supabase
-7. Success message + AI response displayed
-8. Balloons animation (if 4-5 stars)
-
-**Edge Cases Handled:**
-- **Empty review**: Shows error "⚠️ Please write a review"
-- **Review < 5 chars**: Shows error "⚠️ Please write at least 5 characters"
-- **API timeout**: Retries 3x, then uses fallback template
-- **Database error**: Shows error with specific message
-- **Network failure**: Graceful degradation with cached response
-
-**User Flow Success Rate**: 98.5% (tested with 200 submissions)
-
-#### **6.2 Task 2: Admin Analytics**
-
-**Normal Behavior:**
-1. Dashboard loads with all feedback
-2. Metrics calculated: Total, Avg, Positive%, Urgent, Today, This Week
-3. Charts render: Rating Distribution, Sentiment Pie, Trend Line
-4. Submissions displayed in expandable cards (2-column layout)
-5. Auto-refresh every 10 seconds
-6. Filters persist across refreshes
-
-**Advanced Features:**
-- **Date Range Filtering**: All Time, Last 7 Days, Last 30 Days, Custom
-- **Multi-select Filters**: Rating (1-5), Sentiment (Pos/Neu/Neg), Priority (H/M/L)
-- **CSV Export**: Downloads with IST timestamps
-- **Clear All**: Confirmation dialog → Database wipe → Clean empty state
-
-**Edge Cases Handled:**
-- **No data**: Shows "📭 No Feedback Yet" with auto-refresh
-- **No filtered results**: Shows "🔍 No results match your filters"
-- **Clear during refresh**: Prevents race condition with session state
-- **Ghost UI after clear**: Fixed with `st.stop()` and cache clearing
-- **Timezone conversion**: Handles naive timestamps from old data
-
-**Dashboard Uptime**: 99.9% (auto-heals from errors)
-
----
-
-### **7. Challenges & Solutions**
-
-| Challenge | Impact | Solution | Outcome |
-|-----------|--------|----------|---------|
-| **Gemini safety blocking** | 30% responses blocked | Switched to OpenRouter + Gemma 3n | 0% blocking |
-| **System message unsupported** | 400 error from Gemma | Combined into user message | 100% success |
-| **Ghost UI after clear** | Poor UX | Added `st.stop()` + cache clear | Clean state |
-| **Timezone confusion** | Wrong timestamps | UTC→IST with pytz | Accurate times |
-| **Filter reset on refresh** | Lost user selections | Session state persistence | Filters persist |
-| **Slow parallel API calls** | Complex error handling | Sequential with retry logic | Simpler, reliable |
-
----
-
-### **8. Comparison: Task 1 vs Task 2**
-
-| Aspect | Task 1 (User) | Task 2 (Admin) |
-|--------|---------------|----------------|
-| **Primary Goal** | Collect feedback | Analyze feedback |
-| **User Type** | Customers | Business owners |
-| **Complexity** | Low (form + submit) | High (charts + filters) |
-| **AI Usage** | 3 API calls per submission | None (uses stored AI) |
-| **Update Frequency** | On-demand | Auto-refresh (10s) |
-| **Data Operation** | Write (INSERT) | Read (SELECT) |
-| **UI Priority** | Simplicity | Information density |
-| **Mobile Focus** | High (80% mobile) | Medium (50% desktop) |
-| **Session State** | Minimal (rating, status) | Extensive (filters, flags) |
-| **Error Tolerance** | Low (must work) | Medium (can retry) |
-
----
-
-### **9. Lessons Learned**
-
-**Technical:**
-1. **Free-tier AI models have quirks** - Gemma doesn't support system messages
-2. **Streamlit caching is powerful but tricky** - Must clear on data changes
-3. **Sequential > Parallel for simple apps** - Easier debugging, better UX
-4. **Session state must be reset carefully** - Ghost state causes bugs
-
-**Design:**
-1. **Auto-refresh needs careful balance** - 10s is sweet spot
-2. **Fallback templates are essential** - Users never see errors
-3. **Mobile-first pays off** - 70% of users on mobile
-4. **Timezone handling is critical** - Always use timezone-aware datetimes
-
-**Process:**
-1. **Prompt engineering is iterative** - Took 4 versions to get right
-2. **Test edge cases early** - Empty state handling saved issues
-3. **User feedback drives design** - "No ghost UI" requirement
-4. **Documentation matters** - Good README = easier maintenance
 
 ---
 
