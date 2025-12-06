@@ -11,7 +11,7 @@ st.set_page_config(
     page_title="Admin Analytics",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="auto"  # CHANGED FROM "expanded" to fix toggle
+    initial_sidebar_state="expanded"  # CHANGED FROM "expanded" to fix toggle
 )
 
 # Enhanced Custom CSS - EXACT SAME
