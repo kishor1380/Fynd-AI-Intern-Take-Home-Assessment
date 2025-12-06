@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from openai import OpenAI  # ← Changed from google.generativeai
+from openai import OpenAI
 from datetime import datetime
 import os
 import time
