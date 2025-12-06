@@ -2,8 +2,8 @@
 
 A production-ready, full-stack customer feedback platform with intelligent AI response generation, real-time analytics, and beautiful admin dashboards.
 ---
-**User Dashboard URL**: https://fynd-ai-intern-take-home-assessment-user-dashboard.streamlit.app/
-**Admin Dashboard URL**: https://fynd-ai-intern-take-home-assessment-analytics-dashboard.streamlit.app/
+## **User Dashboard URL**: https://fynd-ai-intern-take-home-assessment-user-dashboard.streamlit.app/
+## **Admin Dashboard URL**: https://fynd-ai-intern-take-home-assessment-analytics-dashboard.streamlit.app/
 ---
 
 ## 📋 **Table of Contents**
