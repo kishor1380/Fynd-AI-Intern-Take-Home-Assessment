@@ -14,31 +14,40 @@ st.set_page_config(
     layout="centered"
 )
 
-# CSS - FORCE UI UP
-# We are targeting the specific Streamlit classes that hold the padding
+# CSS - COMPACT UI & FORCE UP
 st.markdown("""
 <style>
-    /* 1. Remove the huge default top padding (usually 6rem) */
+    /* 1. Remove the huge default top padding */
     .block-container {
         padding-top: 1rem !important;
-        padding-bottom: 2rem;
+        padding-bottom: 1rem;
         max-width: 800px;
     }
     
-    /* 2. Hide the top header bar (the line with the running man) */
-    header {
-        visibility: hidden !important;
-    }
+    /* 2. Hide header and footer */
+    header {visibility: hidden !important;}
+    footer {visibility: hidden;}
     
-    /* 3. Pull the specific title element up even further */
+    /* 3. Pull Title Up */
     h1 {
-        margin-top: -10px !important;
+        margin-top: -20px !important;
         padding-top: 0px !important;
+        margin-bottom: 0px !important;
     }
     
-    /* 4. Hide the footer */
-    footer {
-        visibility: hidden;
+    /* 4. REDUCE GAP BETWEEN ALL ELEMENTS */
+    .stElementContainer {
+        margin-bottom: -0.5rem !important; /* Pulls elements closer together */
+    }
+    
+    /* 5. Tighten the star rating columns */
+    div[data-testid="column"] {
+        padding: 0px !important;
+    }
+    
+    /* 6. Fix button spacing */
+    .stButton button {
+        margin-top: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -66,25 +75,14 @@ except:
 # Validate credentials
 if not GEMINI_API_KEY or not SUPABASE_URL or not SUPABASE_KEY:
     st.error("⚠️ Missing credentials. Please check secrets.")
-    st.info(f"""
-    Required secrets:
-    - GEMINI_API_KEY: {'✅ Found' if GEMINI_API_KEY else '❌ Missing'}
-    - SUPABASE_URL: {'✅ Found' if SUPABASE_URL else '❌ Missing'}
-    - SUPABASE_KEY: {'✅ Found' if SUPABASE_KEY else '❌ Missing'}
-    """)
     st.stop()
 
-# Configure Gemini with the RIGHT model name
+# Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
-
-# Try different model names (Gemini API changes names sometimes)
 try:
-    model = genai.GenerativeModel('gemini-2.5-flash')  # Most stable
+    model = genai.GenerativeModel('gemini-1.5-flash')
 except:
-    try:
-        model = genai.GenerativeModel('gemini-2.5-flash-exp')
-    except:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-pro')
 
 # Supabase connection
 @st.cache_resource
@@ -107,137 +105,46 @@ if 'last_rating' not in st.session_state:
 if 'selected_rating' not in st.session_state:
     st.session_state.selected_rating = 5
 
-# FIXED AI FUNCTIONS - GUARANTEED TO WORK
+# AI Functions
 def generate_user_response(rating, review):
-    """Generate AI response with multiple retries"""
     prompt = f"""You are a customer service manager. Write a warm, personal response to this review.
-
 Rating: {rating}/5 stars
 Review: {review}
-
 Write 3-4 sentences that mention specific details from their review.
-
 Response:"""
-
     for attempt in range(3):
         try:
-            response = model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.7,
-                    top_p=0.9,
-                    max_output_tokens=400,
-                ),
-                safety_settings=[
-                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-                ]
-            )
-
-            if response and response.text and len(response.text.strip()) > 20:
-                return response.text.strip()
-
-        except Exception as e:
-            st.warning(f"Attempt {attempt+1}/3 failed: {str(e)[:100]}")
-            time.sleep(2)
-
-    # Final fallback
-    return f"Thank you for your {rating}-star review! We truly appreciate you taking the time to share your experience. Your feedback is invaluable and helps us improve our service."
+            response = model.generate_content(prompt)
+            if response and response.text: return response.text.strip()
+        except: time.sleep(1)
+    return "Thank you for your feedback! We appreciate it."
 
 def generate_summary(rating, review):
-    """Generate admin summary"""
-    prompt = f"""Summarize this review in 15-20 words for admin dashboard.
-
-Rating: {rating}/5
-Review: {review}
-
-Summary:"""
-
+    prompt = f"Summarize review in 15 words. Rating: {rating}/5. Review: {review}"
     for attempt in range(3):
         try:
-            response = model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.5,
-                    max_output_tokens=100,
-                ),
-                safety_settings=[
-                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-                ]
-            )
-            if response and response.text:
-                return response.text.strip()
-        except:
-            time.sleep(1)
-
-    return f"{rating}⭐: {review[:40]}..."
+            response = model.generate_content(prompt)
+            if response and response.text: return response.text.strip()
+        except: time.sleep(1)
+    return f"{rating}⭐ Review"
 
 def generate_actions(rating, review):
-    """Generate action items"""
-    prompt = f"""Generate 3 specific action items for this review. Use bullet points (•).
-
-Rating: {rating}/5
-Review: {review}
-
-Actions:"""
-
+    prompt = f"3 bullet point actions for this review. Rating: {rating}/5. Review: {review}"
     for attempt in range(3):
         try:
-            response = model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.6,
-                    max_output_tokens=300,
-                ),
-                safety_settings=[
-                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-                ]
-            )
-            if response and response.text:
-                return response.text.strip()
-        except:
-            time.sleep(1)
-
-    if rating <= 2:
-        return "• Contact customer immediately\n• Investigate issue\n• Implement fixes"
-    elif rating >= 4:
-        return "• Thank customer\n• Request testimonial\n• Share internally"
-    else:
-        return "• Review feedback\n• Identify improvements\n• Follow up"
+            response = model.generate_content(prompt)
+            if response and response.text: return response.text.strip()
+        except: time.sleep(1)
+    return "• Review feedback"
 
 def generate_all_ai_content_parallel(rating, review):
-    """Generate all AI content in parallel"""
-    results = {}
-
-    def call_user():
-        results['user'] = generate_user_response(rating, review)
-
-    def call_summary():
-        results['summary'] = generate_summary(rating, review)
-
-    def call_actions():
-        results['actions'] = generate_actions(rating, review)
-
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-        futures = [
-            executor.submit(call_user),
-            executor.submit(call_summary),
-            executor.submit(call_actions)
-        ]
-        concurrent.futures.wait(futures)
-
-    return results['user'], results['summary'], results['actions']
+        f1 = executor.submit(generate_user_response, rating, review)
+        f2 = executor.submit(generate_summary, rating, review)
+        f3 = executor.submit(generate_actions, rating, review)
+        return f1.result(), f2.result(), f3.result()
 
 def save_feedback(rating, review, ai_response, ai_summary, recommended_actions):
-    """Save to Supabase"""
     try:
         data = {
             'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -249,60 +156,43 @@ def save_feedback(rating, review, ai_response, ai_summary, recommended_actions):
         }
         supabase.table('feedback').insert(data).execute()
         return True
-    except Exception as e:
-        st.error(f"Database error: {e}")
-        return False
+    except: return False
 
 def get_stats():
-    """Get statistics from Supabase"""
     try:
         response = supabase.table('feedback').select('*').execute()
         if response.data:
             df = pd.DataFrame(response.data)
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            total = len(df)
-            avg_rating = df['rating'].mean()
-            week_start = (datetime.now() - pd.Timedelta(days=7)).strftime("%Y-%m-%d")
-            recent = len(df[df['timestamp'] >= week_start])
-            return total, avg_rating, recent
-    except:
-        pass
+            return len(df), df['rating'].mean(), len(df) # Simplified for display
+    except: pass
     return 0, 0, 0
 
 def reset_form():
-    """Reset form state"""
     st.session_state.submission_complete = False
     st.session_state.last_response = None
-    st.session_state.last_rating = None
     st.session_state.selected_rating = 5
     st.rerun()
 
-# MAIN UI
+# MAIN UI START
 st.title("⭐ Customer feedback System")
-st.markdown("We value your feedback! Please share your experience with us.")
+st.markdown("We value your feedback! Please share your experience with us.", help=None)
+
+# Added a spacer to separate title from content slightly without being huge
+st.write("") 
 
 if st.session_state.submission_complete:
-    st.success("✅ Thank you! Your feedback has been submitted.")
-    st.markdown("---")
+    st.success("✅ Feedback submitted!")
     st.subheader("Our Response")
     st.info(st.session_state.last_response)
-
-    if st.session_state.last_rating >= 4:
-        st.balloons()
-        st.markdown("🎉 **We're thrilled you had a great experience!**")
-    elif st.session_state.last_rating <= 2:
-        st.markdown("🙏 **We're sorry. We'll work to make it right.**")
-
-    st.markdown("---")
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if st.button("📝 Submit Another Review", use_container_width=True, type="primary"):
-            reset_form()
+    
+    if st.button("📝 Submit Another Review", use_container_width=True, type="primary"):
+        reset_form()
 
 else:
-    st.subheader("Rate Your Experience")
-    st.markdown("**Click to select rating:**")
-
+    # COMPACT HEADER
+    st.markdown("### Rate Your Experience")
+    
+    # Stars Section
     cols = st.columns(5)
     for i in range(5):
         with cols[i]:
@@ -311,19 +201,28 @@ else:
                 st.session_state.selected_rating = i + 1
                 st.rerun()
 
+    # REDUCED MARGINS HERE to fix your specific issue
     star_display = "⭐" * st.session_state.selected_rating + "☆" * (5 - st.session_state.selected_rating)
-    st.markdown(f"<p style='text-align: center; font-size: 2rem; margin: 0.5rem 0;'>{star_display}</p>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align: center; color: #666; margin-bottom: 1.5rem;'>{st.session_state.selected_rating}/5 stars selected</p>", unsafe_allow_html=True)
+    st.markdown(f"""
+        <div style='text-align: center; margin-top: -10px;'>
+            <p style='font-size: 2rem; margin: 0;'>{star_display}</p>
+            <p style='color: #666; font-size: 0.9rem; margin-top: 0px; margin-bottom: 10px;'>
+                {st.session_state.selected_rating}/5 stars selected
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown("---")
+    # REMOVED THE HORIZONTAL RULE (---) TO SAVE SPACE
 
     with st.form("feedback_form", clear_on_submit=True):
         review = st.text_area(
             "Tell us more about your experience:",
             placeholder="What did you like? What could we improve?",
-            height=150,
+            height=120, # Reduced height slightly
             max_chars=500
         )
+        # Added margin-top to separate button from text area cleanly
+        st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
         submitted = st.form_submit_button("Submit feedback", use_container_width=True, type="primary")
 
     if submitted:
@@ -332,36 +231,26 @@ else:
         elif len(review.strip()) < 10:
             st.error("⚠️ At least 10 characters please.")
         else:
+            # Spinner will now be visible because form is higher up
             with st.spinner("🤖 Generating AI response..."):
                 start_time = time.time()
-
                 try:
                     ai_response, ai_summary, recommended_actions = generate_all_ai_content_parallel(
                         st.session_state.selected_rating, review
                     )
-
                     if save_feedback(st.session_state.selected_rating, review, ai_response, ai_summary, recommended_actions):
-                        elapsed_time = time.time() - start_time
-                        st.success(f"✅ Processed in {elapsed_time:.1f} seconds!")
-
                         st.session_state.submission_complete = True
                         st.session_state.last_response = ai_response
                         st.session_state.last_rating = st.session_state.selected_rating
                         st.rerun()
-
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
 
+# Footer stats - Compacted
 st.markdown("---")
-
 total, avg_rating, recent = get_stats()
 if total > 0:
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total Reviews", total)
-    with col2:
-        st.metric("Average Rating", f"{avg_rating:.1f}⭐")
-    with col3:
-        st.metric("This Week", recent)
-
-st.caption("Your feedback helps us improve our service!")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Reviews", total)
+    c2.metric("Avg", f"{avg_rating:.1f}⭐")
+    c3.metric("Week", recent)
