@@ -6,15 +6,15 @@ from datetime import datetime, timedelta
 import time
 from supabase import create_client, Client
 
-# Page configuration
+# Page configuration - KEEP SIDEBAR ALWAYS VISIBLE
 st.set_page_config(
     page_title="Admin Analytics",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"  # CHANGED FROM "expanded" to fix toggle
+    initial_sidebar_state="expanded"  # Keep expanded, don't allow collapse
 )
 
-# Enhanced Custom CSS - EXACT SAME
+# Enhanced Custom CSS - FIXED SIDEBAR VISIBILITY
 st.markdown("""
 <style>
     .main > div {
@@ -91,9 +91,12 @@ st.markdown("""
         font-weight: 600;
     }
 
+    /* SIDEBAR - FORCE VISIBLE */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%) !important;
         box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        display: block !important;
+        visibility: visible !important;
     }
 
     section[data-testid="stSidebar"] > div {
@@ -101,9 +104,18 @@ st.markdown("""
         padding-top: 2rem;
     }
 
-    /* SIDEBAR TOGGLE BUTTON FIX */
+    /* KEEP SIDEBAR TOGGLE VISIBLE */
     button[kind="header"] {
-        color: white !important;
+        display: block !important;
+        visibility: visible !important;
+        color: #667eea !important;
+        background: white !important;
+        padding: 0.5rem !important;
+        border-radius: 4px !important;
+    }
+
+    button[kind="header"]:hover {
+        background: #f0f0f0 !important;
     }
 
     section[data-testid="stSidebar"] .stMarkdown,
@@ -182,7 +194,10 @@ st.markdown("""
 
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
+    /* DON'T HIDE HEADER - it contains sidebar toggle */
+    .stApp > header {
+        background: transparent;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -271,7 +286,7 @@ st.markdown("""
 
 df = load_data()
 
-# Sidebar
+# Sidebar - ALWAYS VISIBLE
 with st.sidebar:
     st.markdown("<h2 style='color: white; margin-bottom: 1.5rem;'>⚙️ Controls</h2>", unsafe_allow_html=True)
     st.markdown("<hr style='border: 1px solid rgba(255,255,255,0.2); margin: 1.5rem 0;'>", unsafe_allow_html=True)
@@ -380,7 +395,7 @@ if len(df) == 0:
     st.markdown("""
     <div class="empty-state">
         <div class="empty-icon">📭</div>
-        <h2 style="color: #667eea;">No feedback Yet</h2>
+        <h2 style="color: #667eea;">No Feedback Yet</h2>
         <p style="color: #666; font-size: 1.05rem;">
             Waiting for submissions...<br>
             🔄 Auto-refreshing every 5 seconds
