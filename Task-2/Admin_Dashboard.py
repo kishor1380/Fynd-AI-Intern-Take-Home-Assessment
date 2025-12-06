@@ -462,6 +462,3 @@ st.caption(f"🕐 {now_str} IST | 📊 {len(df_filtered)}/{len(df)} | 🔄 Auto-
 
 time.sleep(10)
 st.rerun()
-
-
-
