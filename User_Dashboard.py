@@ -64,7 +64,7 @@ if not GEMINI_API_KEY or not SUPABASE_URL:
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 # Using 1.5-flash because it is the most stable free tier model
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 # Configure Supabase
 @st.cache_resource
