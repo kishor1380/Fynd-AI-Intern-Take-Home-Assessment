@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import google.generativeai as genai
+from openai import OpenAI  # ← Changed from google.generativeai
 from datetime import datetime
 import os
 import time
@@ -20,7 +20,6 @@ st.set_page_config(
 # ---------------------------------------------------------
 st.markdown("""
 <style>
-    /* Compact the top area */
     .block-container {
         padding-top: 1rem !important;
         padding-bottom: 1rem;
@@ -49,29 +48,25 @@ st.markdown("""
 # 3. SETUP CREDENTIALS
 # ---------------------------------------------------------
 try:
-    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+    OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]  # ← Changed
     SUPABASE_URL = st.secrets["SUPABASE_URL"]
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 except:
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")  # ← Changed
     SUPABASE_URL = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
-if not GEMINI_API_KEY or not SUPABASE_URL:
+if not OPENROUTER_API_KEY or not SUPABASE_URL:
     st.error("⚠️ Missing API Keys. Check .streamlit/secrets.toml")
     st.stop()
 
-# Configure Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-2.5-flash')
+# Configure OpenRouter using OpenAI client
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=OPENROUTER_API_KEY,
+)
 
-# SAFETY SETTINGS
-SAFETY_SETTINGS = [
-    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-]
+MODEL_NAME = "google/gemma-3n-e2b-it:free"  # ← OpenRouter free model
 
 # Configure Supabase
 @st.cache_resource
@@ -97,69 +92,88 @@ if 'selected_rating' not in st.session_state:
     st.session_state.selected_rating = 5
 
 # ---------------------------------------------------------
-# 5. AI FUNCTIONS WITH RETRY LOGIC
+# 5. AI FUNCTIONS WITH RETRY LOGIC - OPENROUTER FORMAT
 # ---------------------------------------------------------
+
+def call_openrouter(messages, max_tokens=500, temperature=0.9):
+    """Helper function to call OpenRouter API"""
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            extra_headers={
+                "HTTP-Referer": "https://streamlit.io",  # Required by OpenRouter
+                "X-Title": "Customer Feedback System"
+            }
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return None
 
 def generate_user_response(rating, review):
     """Generate a friendly, empathetic response to the user review."""
-    prompt = f"""You are an empathetic customer service manager personally responding to this customer review.
+    messages = [
+        {"role": "system", "content": "You are an empathetic customer service manager responding to customer reviews."},
+        {"role": "user", "content": f"""Write a warm, personalized response (3-4 sentences) to this customer review:
 
 Rating: {rating}/5 stars
 Review: "{review}"
 
-Write a warm, personalized response (3-4 sentences) that:
-1. SPECIFICALLY mentions what the customer talked about - use their exact words and context
-2. Shows genuine emotion appropriate to their rating
-3. If negative (1-2 stars): Apologize SPECIFICALLY for what went wrong and offer a concrete solution
-4. If positive (4-5 stars): Express genuine excitement about the SPECIFIC things they praised
+Guidelines:
+1. SPECIFICALLY mention what the customer talked about
+2. Show genuine emotion appropriate to their rating
+3. If negative (1-2 stars): Apologize SPECIFICALLY and offer a concrete solution
+4. If positive (4-5 stars): Express genuine excitement about what they praised
 5. If neutral (3 stars): Acknowledge mixed feelings and commit to improvement
 
-CRITICAL: Be conversational, warm, and reference SPECIFIC details. No preamble.
+Be conversational, warm, and reference SPECIFIC details. No preamble.
 
-Your response:"""
+Your response:"""}
+    ]
 
+    # Retry logic (3 attempts)
     for attempt in range(3):
-        try:
-            response = model.generate_content(prompt, safety_settings=SAFETY_SETTINGS)
-            if hasattr(response, 'text') and response.text and len(response.text.strip()) > 20:
-                return response.text.strip()
-        except Exception as e:
-            if attempt == 2:
-                if rating >= 4:
-                    return f"Thank you so much for your wonderful {rating}-star review! We're thrilled to hear about your positive experience. Your feedback means the world to us and motivates our team to keep delivering excellent service. We look forward to serving you again soon!"
-                elif rating <= 2:
-                    return f"We sincerely apologize for your experience that led to this {rating}-star review. Your feedback is extremely important to us and we take it very seriously. We would love the opportunity to make things right and discuss how we can improve. Please don't hesitate to reach out to our support team."
-                else:
-                    return f"Thank you for your {rating}-star review and honest feedback. We appreciate you taking the time to share your experience with us. We're always working to improve our service and your input helps us identify areas where we can do better. We hope to exceed your expectations next time!"
-            time.sleep(1)
+        result = call_openrouter(messages, max_tokens=500, temperature=0.9)
+        if result and len(result) > 20:
+            return result
+        time.sleep(1)
 
-    return f"Thank you for your {rating}-star feedback! We appreciate you taking the time to share your experience with us."
+    # Fallback templates
+    if rating >= 4:
+        return f"Thank you so much for your wonderful {rating}-star review! We're thrilled to hear about your positive experience. Your feedback means the world to us and motivates our team to keep delivering excellent service. We look forward to serving you again soon!"
+    elif rating <= 2:
+        return f"We sincerely apologize for your experience that led to this {rating}-star review. Your feedback is extremely important to us and we take it very seriously. We would love the opportunity to make things right and discuss how we can improve. Please don't hesitate to reach out to our support team."
+    else:
+        return f"Thank you for your {rating}-star review and honest feedback. We appreciate you taking the time to share your experience with us. We're always working to improve our service and your input helps us identify areas where we can do better. We hope to exceed your expectations next time!"
 
 def generate_summary(rating, review):
     """Generate a concise summary for admin dashboard."""
-    prompt = f"""Create a detailed admin summary (15-25 words) that captures the KEY SPECIFIC POINTS from this review.
+    messages = [
+        {"role": "system", "content": "You are a business analyst creating concise summaries."},
+        {"role": "user", "content": f"""Create a summary (15-25 words) of this review:
 
 Rating: {rating}/5 stars
 Review: "{review}"
 
-Focus on WHAT SPECIFICALLY they mentioned. Be concrete and actionable.
-Summary (15-25 words):"""
+Focus on SPECIFIC points mentioned. Be concrete and actionable.
+Summary:"""}
+    ]
 
     for attempt in range(3):
-        try:
-            response = model.generate_content(prompt, safety_settings=SAFETY_SETTINGS)
-            if hasattr(response, 'text') and response.text:
-                return response.text.strip()
-        except:
-            if attempt == 2:
-                return f"{rating}⭐ review: {review[:50]}..."
-            time.sleep(1)
+        result = call_openrouter(messages, max_tokens=100, temperature=0.7)
+        if result:
+            return result
+        time.sleep(1)
 
-    return f"{rating}-star feedback received"
+    return f"{rating}⭐ review: {review[:50]}..."
 
 def generate_actions(rating, review):
     """Generate recommended next actions based on feedback."""
-    prompt = f"""You are a business consultant analyzing this customer feedback. Generate 3 CONCRETE, SPECIFIC action items.
+    messages = [
+        {"role": "system", "content": "You are a business consultant analyzing customer feedback."},
+        {"role": "user", "content": f"""Generate 3 CONCRETE, SPECIFIC action items for this review:
 
 Rating: {rating}/5 stars
 Review: "{review}"
@@ -172,24 +186,22 @@ Requirements:
 Format as bullet points (use • not -).
 Each action should be 1-2 lines maximum.
 
-Recommended Actions:"""
+Recommended Actions:"""}
+    ]
 
     for attempt in range(3):
-        try:
-            response = model.generate_content(prompt, safety_settings=SAFETY_SETTINGS)
-            if hasattr(response, 'text') and response.text:
-                return response.text.strip()
-        except:
-            if attempt == 2:
-                if rating <= 2:
-                    return "• Contact customer immediately for service recovery\n• Investigate root cause of reported issues\n• Implement corrective measures to prevent recurrence"
-                elif rating >= 4:
-                    return "• Thank customer personally for positive feedback\n• Request permission to use as testimonial\n• Share success with team and continue excellent service"
-                else:
-                    return "• Acknowledge feedback and thank customer\n• Identify specific improvement areas mentioned\n• Follow up to address concerns"
-            time.sleep(1)
+        result = call_openrouter(messages, max_tokens=300, temperature=0.8)
+        if result:
+            return result
+        time.sleep(1)
 
-    return "• Review feedback\n• Take appropriate action\n• Follow up with customer"
+    # Fallback templates
+    if rating <= 2:
+        return "• Contact customer immediately for service recovery\n• Investigate root cause of reported issues\n• Implement corrective measures to prevent recurrence"
+    elif rating >= 4:
+        return "• Thank customer personally for positive feedback\n• Request permission to use as testimonial\n• Share success with team and continue excellent service"
+    else:
+        return "• Acknowledge feedback and thank customer\n• Identify specific improvement areas mentioned\n• Follow up to address concerns"
 
 # ---------------------------------------------------------
 # 6. DATABASE & UI LOGIC
@@ -215,7 +227,6 @@ def get_stats():
     try:
         response = supabase.table('feedback').select('rating, timestamp').execute()
 
-        # Check if we got data
         if response.data and len(response.data) > 0:
             df = pd.DataFrame(response.data)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -224,11 +235,9 @@ def get_stats():
             recent = len(df[df['timestamp'] >= (datetime.now() - pd.Timedelta(days=7))])
             return total, avg, recent
         else:
-            # Empty database - return zeros
             return 0, 0, 0
 
     except Exception as e:
-        # Any error - return zeros
         return 0, 0, 0
 
 def reset_form():
@@ -299,15 +308,15 @@ else:
         else:
             with st.spinner("🤖 Generating AI responses..."):
 
-                # 1. Generate User Response (with retry logic)
+                # 1. Generate User Response
                 ai_response = generate_user_response(st.session_state.selected_rating, review)
 
-                # 2. Wait briefly, then Summary
-                time.sleep(0.5)
+                # 2. Generate Summary
+                time.sleep(0.3)
                 ai_summary = generate_summary(st.session_state.selected_rating, review)
 
-                # 3. Wait briefly, then Actions
-                time.sleep(0.5)
+                # 3. Generate Actions
+                time.sleep(0.3)
                 recommended_actions = generate_actions(st.session_state.selected_rating, review)
 
                 # Save to database
