@@ -71,9 +71,9 @@ if not GEMINI_API_KEY or not SUPABASE_URL:
 genai.configure(api_key=GEMINI_API_KEY)
 try:
     # Try Flash first (faster/cheaper), fallback to Pro
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.0-flash-exp')
 except:
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-2.5-flasH')
 
 # Configure Supabase
 @st.cache_resource
