@@ -71,7 +71,7 @@ if not GEMINI_API_KEY or not SUPABASE_URL:
 genai.configure(api_key=GEMINI_API_KEY)
 try:
     # Try Flash first (faster/cheaper), fallback to Pro
-    model = genai.GenerativeModel('gemini-2.5-flash")
+    model = genai.GenerativeModel('gemini-2.5-flash')
 except:
     model = genai.GenerativeModel('gemini-2.5-flasH')
 
