@@ -18,7 +18,8 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main .block-container {
-        padding-top: 1rem !important;
+        padding-top: 0rem !important;   /* Changed to 0rem */
+        margin-top: -50px !important;   /* Added negative margin to pull it up */
         padding-bottom: 2rem;
         max-width: 800px;
     }
