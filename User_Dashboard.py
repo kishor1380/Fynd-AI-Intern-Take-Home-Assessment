@@ -20,30 +20,25 @@ st.set_page_config(
 # ---------------------------------------------------------
 st.markdown("""
 <style>
-    /* Remove huge default top padding */
+    /* Compact the top area */
     .block-container {
         padding-top: 1rem !important;
         padding-bottom: 1rem;
         max-width: 800px;
     }
-    /* Hide header and footer */
     header {visibility: hidden !important;}
     footer {visibility: hidden;}
-    /* Pull Title Up */
     h1 {
         margin-top: -20px !important;
         padding-top: 0px !important;
         margin-bottom: 0px !important;
     }
-    /* Reduce gap between elements */
     .stElementContainer {
         margin-bottom: -0.5rem !important; 
     }
-    /* Tighten columns */
     div[data-testid="column"] {
         padding: 0px !important;
     }
-    /* Fix button spacing */
     .stButton button {
         margin-top: 10px;
     }
@@ -58,22 +53,18 @@ try:
     SUPABASE_URL = st.secrets["SUPABASE_URL"]
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 except:
-    # Fallback for local testing if secrets not found
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
     SUPABASE_URL = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
 if not GEMINI_API_KEY or not SUPABASE_URL:
-    st.error("⚠️ Missing API Keys. Please check your .streamlit/secrets.toml file.")
+    st.error("⚠️ Missing API Keys. Check .streamlit/secrets.toml")
     st.stop()
 
 # Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
-try:
-    # Try Flash first (faster/cheaper), fallback to Pro
-    model = genai.GenerativeModel('gemini-2.5-flash')
-except:
-    model = genai.GenerativeModel('gemini-2.5-flasH')
+# Using 1.5-flash because it is the most stable free tier model
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Configure Supabase
 @st.cache_resource
@@ -99,14 +90,29 @@ if 'selected_rating' not in st.session_state:
     st.session_state.selected_rating = 5
 
 # ---------------------------------------------------------
-# 5. AI FUNCTIONS (SEQUENTIAL FOR FREE TIER STABILITY)
+# 5. AI FUNCTIONS (SEQUENTIAL + RICH PROMPTS)
 # ---------------------------------------------------------
 
 def generate_user_response(rating, review):
-    prompt = f"""You are a customer service manager. Write a warm, 3-sentence response to this review.
+    """Generate a friendly, empathetic response to the user review."""
+    prompt = f"""You are an empathetic customer service manager personally responding to this customer review.
+
     Rating: {rating}/5 stars
     Review: "{review}"
-    Response:"""
+
+    Write a warm, personalized response (3-4 sentences) that:
+    1. SPECIFICALLY mentions what the customer talked about - use their exact words and context
+    2. Shows genuine emotion appropriate to their rating
+    3. If negative (1-2 stars): 
+       - Apologize SPECIFICALLY for what went wrong
+       - Offer a concrete solution
+    4. If positive (4-5 stars): 
+       - Express genuine excitement about the SPECIFIC things they praised
+    5. If neutral (3 stars): 
+       - Acknowledge mixed feelings and commit to improvement
+
+    CRITICAL: Be conversational, warm, and reference SPECIFIC details. No preamble."""
+
     try:
         response = model.generate_content(prompt)
         return response.text.strip()
@@ -114,10 +120,15 @@ def generate_user_response(rating, review):
         return f"ERROR: {str(e)}"
 
 def generate_summary(rating, review):
-    prompt = f"""Summarize this review in 15 words for an admin dashboard.
-    Rating: {rating}/5
+    """Generate a concise summary for admin dashboard."""
+    prompt = f"""Create a detailed admin summary (20 to 25 words) that captures the KEY SPECIFIC POINTS from this review.
+
+    Rating: {rating}/5 stars
     Review: "{review}"
-    Summary:"""
+
+    Focus on WHAT SPECIFICALLY they mentioned. Be concrete and actionable.
+    Summary (15-25 words):"""
+
     try:
         response = model.generate_content(prompt)
         return response.text.strip()
@@ -125,13 +136,21 @@ def generate_summary(rating, review):
         return f"ERROR: {str(e)}"
 
 def generate_actions(rating, review):
-    prompt = f"""List 3 short bullet points (max 5 words each) for actions to take.
-    Rating: {rating}/5
+    """Generate recommended next actions based on feedback."""
+    prompt = f"""You are a business consultant analyzing this customer feedback. Generate 3 CONCRETE, SPECIFIC action items.
+
+    Rating: {rating}/5 stars
     Review: "{review}"
-    Format:
-    • Action 1
-    • Action 2
-    • Action 3"""
+
+    Requirements:
+    1. Reference SPECIFIC issues or praises from the review
+    2. Give actionable steps with WHAT to do and HOW
+    3. Use action verbs: Contact, Investigate, Train, Implement, etc.
+
+    Format as bullet points (use • not -).
+    Each action should be 1-2 lines maximum.
+    Recommended Actions:"""
+
     try:
         response = model.generate_content(prompt)
         return response.text.strip()
@@ -139,7 +158,7 @@ def generate_actions(rating, review):
         return f"ERROR: {str(e)}"
 
 # ---------------------------------------------------------
-# 6. DATABASE FUNCTIONS
+# 6. DATABASE & UI LOGIC
 # ---------------------------------------------------------
 def save_feedback(rating, review, ai_response, ai_summary, recommended_actions):
     try:
@@ -163,7 +182,6 @@ def get_stats():
         if response.data:
             df = pd.DataFrame(response.data)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
-            
             total = len(df)
             avg = df['rating'].mean() if total > 0 else 0
             recent = len(df[df['timestamp'] >= (datetime.now() - pd.Timedelta(days=7))])
@@ -184,10 +202,9 @@ st.title("⭐ Customer Feedback System")
 st.markdown("We value your feedback! Please share your experience.", help=None)
 st.write("") 
 
-# --- SUBMISSION COMPLETE VIEW ---
+# --- VIEW: SUBMISSION COMPLETE ---
 if st.session_state.submission_complete:
     st.success("✅ Feedback submitted!")
-    
     if st.session_state.last_rating >= 4:
         st.balloons()
     
@@ -197,11 +214,11 @@ if st.session_state.submission_complete:
     if st.button("📝 Submit Another Review", use_container_width=True, type="primary"):
         reset_form()
 
-# --- FEEDBACK FORM VIEW ---
+# --- VIEW: FEEDBACK FORM ---
 else:
     st.markdown("### Rate Your Experience")
     
-    # Star Buttons
+    # Star Selection
     cols = st.columns(5)
     for i in range(5):
         with cols[i]:
@@ -210,7 +227,7 @@ else:
                 st.session_state.selected_rating = i + 1
                 st.rerun()
 
-    # Star Display Text
+    # Visual Display
     star_display = "⭐" * st.session_state.selected_rating + "☆" * (5 - st.session_state.selected_rating)
     st.markdown(f"""
         <div style='text-align: center; margin-top: -10px;'>
@@ -221,7 +238,7 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-    # Input Form
+    # Form
     with st.form("feedback_form", clear_on_submit=True):
         review = st.text_area(
             "Tell us more:",
@@ -238,22 +255,22 @@ else:
         elif len(review.strip()) < 5:
             st.error("⚠️ Please write at least 5 characters.")
         else:
-            with st.spinner("🤖 Processing..."):
+            with st.spinner("🤖 Analyzing (Sequential Processing)..."):
+                
                 # 1. Generate User Response
                 ai_response = generate_user_response(st.session_state.selected_rating, review)
                 
-                # Check for API Error immediately
                 if "ERROR:" in ai_response:
                     st.error("⚠️ API Failed: " + ai_response)
                 else:
-                    # If successful, wait 1s (Rate Limit Protection) and continue
-                    time.sleep(1) 
+                    # 2. Wait 1s, then Summary
+                    time.sleep(1.0)
                     ai_summary = generate_summary(st.session_state.selected_rating, review)
                     
-                    time.sleep(1)
+                    # 3. Wait 1s, then Actions
+                    time.sleep(1.0)
                     recommended_actions = generate_actions(st.session_state.selected_rating, review)
 
-                    # Save to DB
                     if save_feedback(st.session_state.selected_rating, review, ai_response, ai_summary, recommended_actions):
                         st.session_state.submission_complete = True
                         st.session_state.last_response = ai_response
