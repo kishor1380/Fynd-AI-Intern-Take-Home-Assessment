@@ -14,20 +14,32 @@ st.set_page_config(
     layout="centered"
 )
 
-# CSS - Move UI up
+# CSS - FORCE UI UP
+# We are targeting the specific Streamlit classes that hold the padding
 st.markdown("""
 <style>
-    .main .block-container {
-        padding-top: 0rem !important;   /* Changed to 0rem */
-        margin-top: -50px !important;   /* Added negative margin to pull it up */
+    /* 1. Remove the huge default top padding (usually 6rem) */
+    .block-container {
+        padding-top: 1rem !important;
         padding-bottom: 2rem;
         max-width: 800px;
     }
-    .stApp header {
-        display: none;
+    
+    /* 2. Hide the top header bar (the line with the running man) */
+    header {
+        visibility: hidden !important;
     }
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    
+    /* 3. Pull the specific title element up even further */
+    h1 {
+        margin-top: -10px !important;
+        padding-top: 0px !important;
+    }
+    
+    /* 4. Hide the footer */
+    footer {
+        visibility: hidden;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -67,12 +79,12 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 # Try different model names (Gemini API changes names sometimes)
 try:
-    model = genai.GenerativeModel('gemini-1.5-flash')  # Most stable
+    model = genai.GenerativeModel('gemini-2.5-flash')  # Most stable
 except:
     try:
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-2.5-flash-exp')
     except:
-        model = genai.GenerativeModel('models/gemini-pro')
+        model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Supabase connection
 @st.cache_resource
