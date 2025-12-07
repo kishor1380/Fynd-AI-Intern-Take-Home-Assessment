@@ -146,7 +146,7 @@ Guidelines:
 3. If negative (1-2 stars): Apologize SPECIFICALLY and offer a concrete solution
 4. If positive (4-5 stars): Express genuine excitement about what they praised
 5. If neutral (3 stars): Acknowledge mixed feelings and commit to improvement
-6. Do NOT output the placeholder brackets with placeholder text in them only Output visible information from the Review
+6. - DO NOT use placeholders like [the place] or [specific detail], only Output visible information from the Review
 Be conversational, warm, and reference SPECIFIC details. No preamble.
 
 Your response:"""}
